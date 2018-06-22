@@ -1,0 +1,107 @@
+#+PROPERTY: header-args :tangle compiler.cpp :main no :comments no
+
+* File Structure
+This file follows the [[http://llvm.org/docs/tutorial/LangImpl01.html][LLVM Kaleidoscope tutorial]] in C++. As per the tutorial, it
+is not an exercise in good programming practices and as such will contain global
+variables and other not-so-great-looking stuff. Let's start with our includes,
+which I'm doing here because I don't know how to do it as an org-babel header.
+
+#+BEGIN_SRC C++
+  #include <string>
+  #include <iostream>
+#+END_SRC
+
+* TODO Parser Front-End
+TODO: Explain the pieces.
+
+* The Lexer
+A lexer is aka a tokenizer. All it does is accepts a stream of characters and
+outputs *tokens*. Any language has a closed set of token types, so we will
+implement them as an =enum=. Our toy kaleidscope language only has 6 different
+token types. =Identifiers= are variable names and the like. Since our only
+primitive values are numbers, we have no notion of strings or compound
+types, but we do have two keywords: =def= for defining a function, and =extern=
+for declaring a function in some other file.
+
+Our particular lexer will accept a stream of characters and return a short int.
+
+#+BEGIN_SRC C++
+  enum Token {
+    tok_eof = -1,
+
+    // keywords
+    tok_def = -2,
+    tok_extern = -3,
+
+    // primary symbols
+    tok_identifier = -4,
+    tok_number = -5
+  };
+#+END_SRC
+
+In addition to our =Token= enum, we will set up two global variables to hold the
+current expression being evaluated.
+
+#+BEGIN_SRC C++
+  // Global Variables
+  static std::string IdentifierStr;
+  static double NumVal;
+#+END_SRC
+
+** =gettok()= Implementation
+The entire lexer is implemented by a single procedure, =gettok=. It takes zero
+arguments and consumes input using the standard C =getchar= function. It will
+consume input characters until reaching =EOF=, and once it is done reading a
+token (i.e., it hits some whitespace), it will call itself again. /Nota bene/,
+it stores the current token in our global variables declared above. 
+
+Let's look at the steps it takes, one by one. 
+
+The =gettok= procedure takes no arguments and incrementally appends characters
+from =stdin= onto the global =IdentifierStr= string. Any leading whitespace is
+ignored. 
+
+#+BEGIN_SRC C++
+  int gettok() {
+    static int LastChar = ' ';
+
+    while (isspace(LastChar))
+      LastChar = getchar();
+#+END_SRC
+
+*I wonder what happens if the file is empty, or all spaces?*
+
+The rest of the procedure is essentially a switch statement on the next
+character consumed. Since in our language all literal values are numbers, we can
+assume an alphabetic-first token is an identifier (a keyword or variable name)
+of some sort.
+
+#+BEGIN_SRC C++
+  if (isalpha(LastChar)) {
+    IdentifierStr = LastChar;
+
+    while (isalnum((LastChar = getchar())))
+      IdentifierStr += LastChar;
+
+    if (IdentifierStr == "def")
+      return tok_def;
+    if (IdentifierStr == "extern")
+      return tok_extern;
+    return tok_identifier;
+  }
+#+END_SRC
+
+#+BEGIN_SRC C++
+  // TODO: Just trying multi-block tangling.
+    return 0;
+  }
+#+END_SRC
+
+* TODO Main Program
+#+BEGIN_SRC C++
+  int main() {
+    int last = gettok();
+    std::cout << IdentifierStr << std::endl;
+    return last;
+  }
+#+END_SRC
