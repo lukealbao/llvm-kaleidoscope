@@ -20,6 +20,7 @@ static double NumVal;
 
 int gettok() {
   static int LastChar = ' ';
+  bool consumingFloat = (LastChar == '.');
 
   while (isspace(LastChar))
     LastChar = getchar();
@@ -35,6 +36,27 @@ int gettok() {
     if (IdentifierStr == "extern")
       return tok_extern;
     return tok_identifier;
+  }
+
+  if (isdigit(LastChar) || (LastChar == '.' && !consumingFloat)) {
+    std::string NumStr;
+
+    do {
+      if (LastChar == '.')
+        consumingFloat = true;
+
+      NumStr += LastChar;
+      LastChar = getchar();
+    } while (isdigit(LastChar) || (LastChar == '.' && !consumingFloat));
+
+    if (LastChar == '.' && consumingFloat) {
+      std::cout << "SyntaxError: Invalid Number: " << NumStr << (char) LastChar << std::endl;
+      exit(1);
+    }
+
+    NumVal = strtod(NumStr.c_str(), 0); // TODO: What is .c_str()?
+
+    return tok_number;
   }
 
   // TODO: Just trying multi-block tangling.
